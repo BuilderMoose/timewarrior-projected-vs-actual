@@ -1,3 +1,4 @@
+
 # Timewarrior Hours Analysis (`projected`)
 
 A Python-based extension for [Timewarrior](https://timewarrior.net/) that provides a detailed daily breakdown of work hours, holiday handling, and "accumulated vs. projected" totals to help you stay on track with your monthly goals.
@@ -8,10 +9,29 @@ A Python-based extension for [Timewarrior](https://timewarrior.net/) that provid
 
 * **Daily Breakdown:** See exactly how many hours you worked each day.
 * **Monthly Projections:** Tracks your progress against a monthly target based on your custom schedule.
-* **Holiday Aware:** Automatically adjusts projections for holidays (configurable).
+* **Holiday Aware:** Automatically adjusts projections for holidays based on your standard work day length.
 * **Weekend Filtering:** Option to hide weekends if no time was recorded.
 * **Timezone Aware:** Automatically converts UTC Timewarrior data to your local timezone.
 * **Human-Readable Output:** Features week-by-week dividers and status indicators (▲/▼).
+
+---
+
+## Example Output
+
+```text
+Date               Goal       Worked     Day +/-    Total      Status
+-----------------------------------------------------------------------
+W01 Jan Mon 02     9:00       8:30       -0:30      8:30       -0:30 ▼
+W01 Jan Tue 03     9:00       9:45       +0:45      18:15      +0:15 ▲
+W01 Jan Wed 04     1:00       0:00       -1:00      18:15      -0:45 ▼  ← Holiday
+W01 Jan Thu 05     9:00       9:10       +0:10      27:25      -0:35 ▼
+-----------------------------------------------------------------------
+Week 01 Summary:   28:00      27:25      (Behind goal by 0:35)
+
+```
+
+> [!IMPORTANT]
+> **Holiday Note:** One (1) extra hour is added to the goal on holidays because the company pays 8 hours for the holiday, but the 9/80 schedule requires 9 hours for the day to be "covered."
 
 ---
 
@@ -30,7 +50,7 @@ chmod +x ~/.timewarrior/extensions/projected
 
 ### 2. Configure Timewarrior
 
-The script relies on your `exclusions` settings to determine your daily "Target" hours. Add your work schedule and holiday preferences to your `~/.timewarrior/timewarrior.cfg`:
+The script relies on your settings to determine your daily "Target" hours. Add your schedule, holiday preferences, and report behavior to your `~/.timewarrior/timewarrior.cfg`:
 
 ```ini
 # Define your work hours (Exclusions are when you ARE NOT working)
@@ -41,10 +61,18 @@ exclusions.wednesday: <00:00 >09:00 <17:00 >24:00
 exclusions.thursday:  <00:00 >09:00 <17:00 >24:00
 exclusions.friday:    <00:00 >09:00 <17:00 >24:00
 
-# Optional: Hide weekends with no recorded time by default
-projected.noweekend = yes
+# Set your standard work day length (defaults to 8 if not set)
+# Holidays are credited for 8 hours; if your day is longer, 
+# the difference is added as a goal for the holiday.
+totals.hours_per_day = 9
 
-# Define Holidays (Script counts these as 1hr targets Mon-Thu, 0hr Fri)
+# Hide weekends with no recorded time by default
+projected.show_weekends = no
+
+# Enable a summary line at the end of every week
+projected.weekly_summary = yes
+
+# Define Holidays
 holidays.US.2026-01-01: New Year's Day
 holidays.US.2026-12-25: Christmas
 
@@ -79,12 +107,14 @@ Once the aliases are set, you can simply run:
 
 ### Dynamic Arguments (RC Overrides)
 
-You can override your default configuration on-the-fly using `rc` flags. This is useful if you want to see weekends even if `projected.noweekend` is set to `yes`.
+You can override your default configuration on-the-fly using `rc` flags. This is useful if you want to see weekends even if `projected.show_weekends` is set to `no`.
 
 ```bash
 # Force weekends to show for this specific run
-timew projected :month rc.projected.noweekend=no
+timew projected :month rc.projected.show_weekends=yes
 
+# Force weekly_summary to show for this specific run
+timew projected :month rc.projected.weekly_summary=yes
 ```
 
 ---
@@ -93,9 +123,9 @@ timew projected :month rc.projected.noweekend=no
 
 The output is designed to be easily scannable:
 
-* **Goal:** Your target hours for that day.
-* **Worked:** Actual time recorded.
-* **Day +/-:** Performance for that specific day.
+* **Goal:** Your target hours for that day (adjusted for holidays and exclusions).
+* **Worked:** Actual time recorded in Timewarrior.
+* **Day +/-:** Performance for that specific day relative to the goal.
 * **Status:** Running total difference for the month (▲ ahead / ▼ behind).
 
 ---
@@ -108,4 +138,19 @@ This script acts as a Timewarrior **extension**. When you run `timew projected`,
 2. Prepends the current configuration settings as a header.
 3. Pipes all of this into the script's `stdin`.
 
-The script parses the configuration header to find your `exclusions` (to set targets) and the custom `projected.noweekend` flag before processing the JSON interval data.
+The script parses the configuration header to find your `exclusions`, `totals.hours_per_day`, and the `projected.show_weekends` flag before processing the JSON interval data.
+
+---
+
+## License
+
+Distributed under the **MIT License** – see `LICENSE` for details.
+
+---
+
+## Contributing
+
+- Fork the repository, make your changes, and open a Pull Request.  
+- Bug reports, feature ideas (e.g., per‑country holiday calendars), and documentation improvements are most welcome.  
+
+---
