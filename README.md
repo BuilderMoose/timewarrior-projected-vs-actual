@@ -43,8 +43,7 @@ Timewarrior looks for executable scripts in its extensions directory. Create a s
 ```bash
 ln -s /path/to/your/repo/analysis.py ~/.timewarrior/extensions/projected
 chmod +x ~/.timewarrior/extensions/projected
-
-
+```
 
 > **Note:** The name of the link (`projected`) becomes the command you type in Timewarrior.
 
