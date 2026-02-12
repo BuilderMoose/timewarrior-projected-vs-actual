@@ -54,7 +54,7 @@ def parse_time_entries(json_data):
     return entries
 
 def get_local_offset():
-    return datetime.now() - datetime.utcnow()
+    return datetime.now().astimezone().utcoffset()
 
 def group_by_date(entries, local_offset):
     daily_totals = defaultdict(float)
