@@ -6,9 +6,16 @@ Includes toggleable weekly summaries with cumulative status.
 
 import json
 import sys
-from datetime import datetime, timedelta, date
+import argparse
+from datetime import datetime, timedelta, date, timezone
 from collections import defaultdict
 import re
+
+# --- CONFIGURATION ---
+# Tags in this list will be ignored by default. 
+# You can add more at runtime using the --ignore flag.
+DEFAULT_IGNORED_TAGS = ["SideQuest", "Nap"]
+# ---------------------
 
 def parse_config_value(config_lines, key):
     """Search for a specific key in the Timewarrior config header"""
@@ -43,12 +50,19 @@ def parse_holidays(config_lines):
             holidays.add(match.group(1))
     return holidays
 
-def parse_time_entries(json_data):
-    """Parse time entries from JSON"""
+def parse_time_entries(json_data, ignored_tags):
+    """Parse time entries from JSON, filtering out ignored tags"""
     entries = []
     for entry in json_data:
+        # If any of the entry's tags intersect with the ignored tags, skip this interval
+        entry_tags = entry.get('tags', [])
+        if ignored_tags and any(tag in ignored_tags for tag in entry_tags):
+            continue
+            
         start_dt = datetime.strptime(entry['start'], '%Y%m%dT%H%M%SZ')
-        end_dt = datetime.strptime(entry['end'], '%Y%m%dT%H%M%SZ') if 'end' in entry else datetime.utcnow()
+        # Use timezone-aware UTC now, then strip tzinfo to match the naive datetime of start_dt
+        end_dt = datetime.strptime(entry['end'], '%Y%m%dT%H%M%SZ') if 'end' in entry else datetime.now(timezone.utc).replace(tzinfo=None)
+        
         duration = (end_dt - start_dt).total_seconds() / 3600.0
         entries.append({'start': start_dt, 'duration': duration})
     return entries
@@ -117,8 +131,17 @@ def print_week_summary(week_num, week_goal, week_actual, cum_goal, cum_actual, h
           f"({status_text} goal by {format_hours(diff)})")
 
 def main():
+    parser = argparse.ArgumentParser(description="Timewarrior Hours Analysis")
+    parser.add_argument('--ignore', nargs='+', default=[], help="Additional tags to ignore (e.g., --ignore Clock Break)")
+    
+    # parse_known_args allows passing Timewarrior's standard piped input without crashing 
+    args, _ = parser.parse_known_args()
+    
+    # Combine the hardcoded defaults with any runtime arguments provided
+    ignored_tags = set(DEFAULT_IGNORED_TAGS + args.ignore)
+
     if sys.stdin.isatty():
-        print("Usage: timew export | python3 script.py", file=sys.stderr)
+        print("Usage: timew export | python3 script.py [--ignore TAG1 TAG2]", file=sys.stderr)
         sys.exit(1)
     
     input_data = sys.stdin.read().strip().split('\n')
@@ -142,7 +165,7 @@ def main():
         json_data = json.loads(json_text)
     except: sys.exit(1)
     
-    daily_totals = group_by_date(parse_time_entries(json_data), get_local_offset())
+    daily_totals = group_by_date(parse_time_entries(json_data, ignored_tags), get_local_offset())
     all_dates = get_date_range(daily_totals, holidays)
     
     header = f"{'Date':<18} {'Goal':<10} {'Worked':<10} {'Day +/-':<10} {'Total':<10} {'Status':<10}"

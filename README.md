@@ -1,4 +1,6 @@
+Here is the updated README with the new tag filtering feature seamlessly integrated into the Features, Configuration, and Usage sections.
 
+```markdown
 # Timewarrior Hours Analysis (`projected`)
 
 A Python-based extension for [Timewarrior](https://timewarrior.net/) that provides a detailed daily breakdown of work hours, holiday handling, and "accumulated vs. projected" totals to help you stay on track with your monthly goals.
@@ -10,6 +12,7 @@ A Python-based extension for [Timewarrior](https://timewarrior.net/) that provid
 * **Daily Breakdown:** See exactly how many hours you worked each day.
 * **Monthly Projections:** Tracks your progress against a monthly target based on your custom schedule.
 * **Holiday Aware:** Automatically adjusts projections for holidays based on your standard work day length.
+* **Tag Filtering:** Automatically exclude intervals containing specific tags (e.g., breaks or personal tasks) from your total hours worked. Set defaults in the script or pass them at runtime.
 * **Weekend Filtering:** Option to hide weekends if no time was recorded.
 * **Timezone Aware:** Automatically converts UTC Timewarrior data to your local timezone.
 * **Human-Readable Output:** Features week-by-week dividers and status indicators (▲/▼).
@@ -28,6 +31,7 @@ W01 Jan Thu 05     9:00       9:10       +0:10      27:25      -0:35 ▼
 -----------------------------------------------------------------------
 Week 01 Summary:   28:00      27:25      (Behind goal by 0:35)
 
+
 ```
 
 > [!IMPORTANT]
@@ -38,11 +42,13 @@ Week 01 Summary:   28:00      27:25      (Behind goal by 0:35)
 ## Installation
 
 ### 1. Link the Extension
+
 Timewarrior looks for executable scripts in its extensions directory. Create a symbolic link from your repository to the Timewarrior extensions folder:
 
 ```bash
 ln -s /path/to/your/repo/analysis.py ~/.timewarrior/extensions/projected
 chmod +x ~/.timewarrior/extensions/projected
+
 ```
 
 > **Note:** The name of the link (`projected`) becomes the command you type in Timewarrior.
@@ -75,9 +81,23 @@ projected.weekly_summary = yes
 holidays.US.2026-01-01: New Year's Day
 holidays.US.2026-12-25: Christmas
 
+
 ```
 
-### 3. Create Shell Aliases
+### 3. Set Default Ignored Tags
+
+Open the `projected` script and modify the `DEFAULT_IGNORED_TAGS` list near the top of the file to include tags you always want excluded from your totals:
+
+```python
+# --- CONFIGURATION ---
+# Tags in this list will be ignored by default. 
+# You can add more at runtime using the --ignore flag.
+DEFAULT_IGNORED_TAGS = ["SideQuest", "Nap"]
+# ---------------------
+
+```
+
+### 4. Create Shell Aliases
 
 To make the report easily accessible, add these aliases to your `~/.bash_aliases` or `~/.zshrc` file:
 
@@ -90,6 +110,7 @@ alias twlp='timew projected :lastmonth'
 
 # Filtered by tag
 alias twpt='timew projected :month tag_name'
+
 
 ```
 
@@ -104,9 +125,21 @@ Once the aliases are set, you can simply run:
 * `twp`: Show the report for the current month.
 * `twlp`: Show the report for the previous month.
 
-### Dynamic Arguments (RC Overrides)
+### Dynamic Arguments & Tag Filtering
 
-You can override your default configuration on-the-fly using `rc` flags. This is useful if you want to see weekends even if `projected.show_weekends` is set to `no`.
+You can override your default configuration or add custom filters on-the-fly when running the command.
+
+**Ignoring specific tags:**
+Pass the `--ignore` flag to exclude specific tags from the total hours calculation for a single run. This combines with your `DEFAULT_IGNORED_TAGS`.
+
+```bash
+# Ignore intervals tagged with "Clock" or "Break"
+timew projected :month --ignore Clock Break
+
+```
+
+**Overriding RC Configs:**
+You can override `timewarrior.cfg` settings using `rc` flags.
 
 ```bash
 # Force weekends to show for this specific run
@@ -114,6 +147,7 @@ timew projected :month rc.projected.show_weekends=yes
 
 # Force weekly_summary to show for this specific run
 timew projected :month rc.projected.weekly_summary=yes
+
 ```
 
 ---
@@ -137,7 +171,7 @@ This script acts as a Timewarrior **extension**. When you run `timew projected`,
 2. Prepends the current configuration settings as a header.
 3. Pipes all of this into the script's `stdin`.
 
-The script parses the configuration header to find your `exclusions`, `totals.hours_per_day`, and the `projected.show_weekends` flag before processing the JSON interval data.
+The script parses the configuration header to find your `exclusions`, `totals.hours_per_day`, and the `projected.show_weekends` flag before processing the JSON interval data. It also leverages `argparse` to safely intercept the `--ignore` flag from standard Timewarrior input streams.
 
 ---
 
@@ -149,7 +183,13 @@ Distributed under the **MIT License** – see `LICENSE` for details.
 
 ## Contributing
 
-- Fork the repository, make your changes, and open a Pull Request.  
-- Bug reports, feature ideas (e.g., per‑country holiday calendars), and documentation improvements are most welcome.  
+* Fork the repository, make your changes, and open a Pull Request.
+* Bug reports, feature ideas (e.g., per‑country holiday calendars), and documentation improvements are most welcome.
 
 ---
+
+```
+
+Would you like me to help write a quick bash script to automatically deploy these code and README updates to your repository and symlink them, or are you good to copy this over manually?
+
+```
