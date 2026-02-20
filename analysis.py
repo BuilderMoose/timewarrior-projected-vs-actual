@@ -14,7 +14,7 @@ import re
 # --- CONFIGURATION ---
 # Tags in this list will be ignored by default. 
 # You can add more at runtime using the --ignore flag.
-DEFAULT_IGNORED_TAGS = ["SideQuest", "Nap"]
+DEFAULT_IGNORED_TAGS = ["SideQuest", "Lunch"]
 # ---------------------
 
 def parse_config_value(config_lines, key):
@@ -167,6 +167,13 @@ def main():
     
     daily_totals = group_by_date(parse_time_entries(json_data, ignored_tags), get_local_offset())
     all_dates = get_date_range(daily_totals, holidays)
+
+    # Print the filtered tags in Timewarrior's rgb125 color (ANSI 69)
+    if ignored_tags:
+        color_rgb125 = "\033[38;5;69m"
+        color_reset = "\033[0m"
+        colored_tags = [f"{color_rgb125}{tag}{color_reset}" for tag in sorted(ignored_tags)]
+        print(f"Excluded tags: {', '.join(colored_tags)}\n")
     
     header = f"{'Date':<18} {'Goal':<10} {'Worked':<10} {'Day +/-':<10} {'Total':<10} {'Status':<10}"
     print(header)
