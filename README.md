@@ -11,17 +11,17 @@ A Python-based extension for [Timewarrior](https://timewarrior.net/) that provid
 * **Daily Breakdown:** Detailed view of hours worked versus daily goals.
 * **Monthly Projections:** Tracks progress against a rolling target based on your specific schedule.
 * **Holiday Aware:** Automatically adjusts goals for holidays based on your standard work day length.
-* **Tag Filtering:** Exclude specific tags (e.g., `Nap`, `SideQuest`) from total calculations. Active filters are highlighted in the header using Timewarrior's `rgb125` theme color.
-* **Weekend Filtering:** Option to hide weekends if no time was recorded.
+* **Multi-Source Tag Filtering:** Exclude specific tags (e.g., `Lunch`, `SideQuest`) from total calculations. Tags can be defined in the script, in your `timewarrior.cfg`, or at runtime.
+* **Excluded Time Summary:** Optional breakdown at the end of the report showing exactly how much time was "lost" to each ignored tag.
 * **Timezone Aware:** Automatically converts UTC Timewarrior data to your local system time.
-* **Visual Status:** Scannable week-by-week dividers and status indicators (▲ ahead / ▼ behind).
+* **Visual Feedback:** Scannable week-by-week dividers and status indicators (▲ ahead / ▼ behind) using Timewarrior's `rgb125` theme color.
 
 ---
 
 ## Example Output
 
 ```text
-Excluded tags: Nap, SideQuest
+Excluded tags: Lunch, SideQuest
 
 Date               Goal       Worked     Day +/-    Total      Status
 -----------------------------------------------------------------------
@@ -32,6 +32,11 @@ W01 Jan Thu 05     9:00       9:10       +0:10      27:25      -0:35 ▼
 -----------------------------------------------------------------------
 Week 01 Summary:   28:00      27:25      (Behind goal by 0:35)
 
+Excluded Time Summary:
+------------------------------
+Lunch              2:30
+SideQuest          1:15
+
 ```
 
 > [!IMPORTANT]
@@ -41,9 +46,9 @@ Week 01 Summary:   28:00      27:25      (Behind goal by 0:35)
 
 ## Installation & Setup
 
-### 1. Install the Extension
+### 1. Link the Extension
 
-Timewarrior looks for executable scripts in its extensions directory. Create a symbolic link without the `.py` extension:
+Create a symbolic link in the Timewarrior extensions directory without the `.py` extension:
 
 ```bash
 # Link the script
@@ -55,7 +60,7 @@ chmod +x ~/.timewarrior/extensions/projected
 
 ### 2. Standard Configuration Template
 
-Add this to your `~/.timewarrior/timewarrior.cfg`. The script parses these headers every time it runs.
+Add this to your `~/.timewarrior/timewarrior.cfg`.
 
 ```ini
 # --- Schedule (Exclusions define non-work time) ---
@@ -73,24 +78,21 @@ totals.hours_per_day = 9.0
 projected.show_weekends = no
 projected.weekly_summary = yes
 
+# --- Tag Filtering ---
+# Tags to ignore (space-separated)
+projected.ignore_tags = Lunch SideQuest Personal
+# Show the 'Excluded Time Summary' at the bottom
+projected.summarize_excluded = yes
+
 # --- Holiday Calendar ---
 holidays.US.2026-01-01: New Year's Day
 holidays.US.2026-12-25: Christmas
 
 ```
 
-### 3. Set Default Ignored Tags
+### 3. Recommended Aliases
 
-Modify the `DEFAULT_IGNORED_TAGS` list inside the script for tags you *always* want to skip:
-
-```python
-DEFAULT_IGNORED_TAGS = ["SideQuest", "Lunch"]
-
-```
-
-### 4. Recommended Aliases
-
-Add these to your `~/.bashrc` or `~/.zshrc`:
+Add these to your `~/.bashrc` or `~/.zshrc` for quick access:
 
 ```bash
 alias twp='timew projected :month'
@@ -102,21 +104,17 @@ alias twlp='timew projected :lastmonth'
 
 ## Usage
 
-### Basic Commands
+### Dynamic Tag Filtering
 
-* `twp`: Show current month.
-* `twlp`: Show last month.
+The script merges ignored tags from three sources:
 
-### Advanced Filtering & Overrides
-
-You can ignore additional tags at runtime or override config settings on the fly:
+1. **Script Defaults:** `DEFAULT_IGNORED_TAGS` in the Python file.
+2. **Config file:** `projected.ignore_tags` in `timewarrior.cfg`.
+3. **Runtime:** Using the `--ignore` flag.
 
 ```bash
-# Ignore "Clock" intervals just for this run
-timew projected :month --ignore Clock
-
-# Temporarily show weekends even if config says 'no'
-timew projected :month rc.projected.show_weekends=yes
+# Ignore 'Meeting' just for this run
+timew projected :month --ignore Meeting
 
 ```
 
@@ -124,9 +122,9 @@ timew projected :month rc.projected.show_weekends=yes
 
 ## Troubleshooting
 
-* **Goals show as 0:00:** The script calculates goals based on the gaps in your `exclusions`. Check your `.cfg` for valid exclusion ranges.
+* **Goals show as 0:00:** Goals are calculated from the *gaps* in your `exclusions`. Check your `.cfg` for valid ranges.
 * **Extension not found:** Ensure the symlink in `~/.timewarrior/extensions/` is executable and does **not** have the `.py` suffix.
-* **Time Shifted:** The script uses your system's local timezone. Ensure your OS clock and timezone are set correctly.
+* **Timezone Mismatch:** The script uses your system's local timezone to process UTC Timewarrior data. Verify your system clock is correct.
 
 ---
 
@@ -141,11 +139,11 @@ ln -s /usr/bin/tee ~/.timewarrior/extensions/Tee
 
 ```
 
-Running `timew Tee :month` will dump the exact JSON and configuration headers to your terminal. This is invaluable for verifying that your tags and timestamps are exporting correctly.
+Running `timew Tee :month` will dump the exact JSON and configuration headers to your terminal.
 
 ### Manual Testing
 
-Capture a debug file and pipe it manually to test logic changes without triggering Timewarrior:
+Capture a debug file to test logic changes without triggering Timewarrior:
 
 ```bash
 timew Tee :month > debug.json
@@ -155,8 +153,8 @@ cat debug.json | python3 analysis.py --ignore Testing
 
 ---
 
-## License & Contributing
+## License
 
-Distributed under the **MIT License**. Contributions, bug reports, and holiday calendar updates are welcome via Pull Requests.
+Distributed under the **MIT License**.
 
 ---
