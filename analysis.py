@@ -63,7 +63,7 @@ def parse_time_entries(json_data, ignored_tags):
         if 'end' in entry:
             end_dt = datetime.strptime(entry['end'], '%Y%m%dT%H%M%SZ')
         else:
-            end_dt = datetime.utcnow()
+            end_dt = datetime.now(timezone.utc).replace(tzinfo=None)
             
         duration = (end_dt - start_dt).total_seconds() / 3600.0
         entry_tags = entry.get('tags', [])
@@ -155,15 +155,27 @@ def main():
     # Group by local date
     daily_totals = defaultdict(float)
     local_offset = datetime.now().astimezone().utcoffset()
+    today = (datetime.now() + local_offset).date()
+
     for entry in entries:
         local_date = (entry['start'] + local_offset).date()
         daily_totals[local_date] += entry['duration']
     
+    # --- UPDATED LOGIC TO FIX THE "BEGINNING OF MONTH" BUG ---
     if not daily_totals:
-        return
+        # If no data at all, default to showing the current month so far
+        min_date = today.replace(day=1)
+        max_date = today
+    else:
+        # Snap the start date to the 1st of the month of your earliest entry
+        earliest_entry_date = min(daily_totals.keys())
+        min_date = earliest_entry_date.replace(day=1)
+        
+        # Ensure we show up to today, or the latest entry (whichever is later)
+        max_date = max(max(daily_totals.keys()), today)
+    # ---------------------------------------------------------
 
     # Create continuous date range
-    min_date, max_date = min(daily_totals.keys()), max(daily_totals.keys())
     all_dates = []
     curr = min_date
     while curr <= max_date:
