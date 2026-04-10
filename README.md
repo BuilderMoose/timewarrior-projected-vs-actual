@@ -9,7 +9,7 @@ A Python-based extension for [Timewarrior](https://timewarrior.net/) that provid
 ## Features
 
 * **Daily Breakdown:** Detailed view of hours worked versus daily goals.
-* **Monthly Projections:** Tracks progress against a rolling target based on your specific schedule.
+* **Monthly Projections:** Tracks progress against a rolling target based on your specific schedule. The script automatically snaps to the 1st of the month to ensure complete cumulative totals, even if you haven't logged time on the earliest days.
 * **Holiday Aware:** Automatically adjusts goals for holidays based on your standard work day length.
 * **Multi-Source Tag Filtering:** Exclude specific tags (e.g., `Lunch`, `SideQuest`) from total calculations. Tags can be defined in the script, in your `timewarrior.cfg`, or at runtime.
 * **Excluded Time Summary:** Optional breakdown at the end of the report showing exactly how much time was "lost" to each ignored tag.
@@ -110,13 +110,15 @@ The script merges ignored tags from three sources:
 
 1. **Script Defaults:** `DEFAULT_IGNORED_TAGS` in the Python file.
 2. **Config file:** `projected.ignore_tags` in `timewarrior.cfg`.
-3. **Runtime:** Using the `--ignore` flag.
-
-```bash
-# Ignore 'Meeting' just for this run
-timew projected :month --ignore Meeting
-
-```
+3. **Runtime:** 
+   * When running via Timewarrior, use the `rc.` override syntax:
+     ```bash
+     timew projected :month rc.projected.ignore_tags="Meeting"
+     ```
+   * When running manually via a pipe, use the `--ignore` flag:
+     ```bash
+     timew export :month | python3 analysis.py --ignore Meeting
+     ```
 
 ---
 
