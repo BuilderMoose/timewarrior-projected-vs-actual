@@ -7,6 +7,7 @@ Includes toggleable weekly summaries with cumulative status and tag exclusions.
 import json
 import sys
 import argparse
+import calendar
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 import re
@@ -155,27 +156,35 @@ def main():
     # Group by local date
     daily_totals = defaultdict(float)
     local_offset = datetime.now().astimezone().utcoffset()
-    today = (datetime.now() + local_offset).date()
+
+    # Consistent local today
+    today = datetime.now().date()
 
     for entry in entries:
         local_date = (entry['start'] + local_offset).date()
         daily_totals[local_date] += entry['duration']
     
-    # --- UPDATED LOGIC TO FIX THE "BEGINNING OF MONTH" BUG ---
     if not daily_totals:
-        # If no data at all, default to showing the current month so far
+        # Fallback: if no data, show the current month up to today
         min_date = today.replace(day=1)
         max_date = today
     else:
-        # Snap the start date to the 1st of the month of your earliest entry
-        earliest_entry_date = min(daily_totals.keys())
-        min_date = earliest_entry_date.replace(day=1)
-        
-        # Ensure we show up to today, or the latest entry (whichever is later)
-        max_date = max(max(daily_totals.keys()), today)
-    # ---------------------------------------------------------
+        # 1. Snap start to the 1st of the earliest month found in data
+        earliest_entry = min(daily_totals.keys())
+        min_date = earliest_entry.replace(day=1)
 
-    # Create continuous date range
+        # 2. Determine the smart end boundary
+        latest_entry = max(daily_totals.keys())
+        
+        # If the data includes the current month, only show up to today
+        if latest_entry.year == today.year and latest_entry.month == today.month:
+            max_date = today
+        else:
+            # If the data is from a past month, snap to the last day of THAT month
+            _, last_day = calendar.monthrange(latest_entry.year, latest_entry.month)
+            max_date = latest_entry.replace(day=last_day)
+
+    # Create continuous date range (rest of your logic remains the same)
     all_dates = []
     curr = min_date
     while curr <= max_date:
