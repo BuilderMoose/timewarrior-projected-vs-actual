@@ -52,7 +52,7 @@ Create a symbolic link in the Timewarrior extensions directory without the `.py`
 
 ```bash
 # Link the script
-ln -s /path/to/your/repo/analysis.py ~/.timewarrior/extensions/projected
+ln -s /path/to/your/repo/projected.py ~/.timewarrior/extensions/projected
 # Make it executable
 chmod +x ~/.timewarrior/extensions/projected
 
@@ -117,7 +117,7 @@ The script merges ignored tags from three sources:
      ```
    * When running manually via a pipe, use the `--ignore` flag:
      ```bash
-     timew export :month | python3 analysis.py --ignore Meeting
+     timew export :month | python3 projected.py --ignore Meeting
      ```
 
 ---
@@ -149,7 +149,7 @@ Capture a debug file to test logic changes without triggering Timewarrior:
 
 ```bash
 timew Tee :month > debug.json
-cat debug.json | python3 analysis.py --ignore Testing
+cat debug.json | python3 projected.py --ignore Testing
 
 ```
 

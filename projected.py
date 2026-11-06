@@ -59,12 +59,12 @@ def parse_time_entries(json_data, ignored_tags):
     excluded_summary = defaultdict(float)
     
     for entry in json_data:
-        start_dt = datetime.strptime(entry['start'], '%Y%m%dT%H%M%SZ')
+        start_dt = datetime.strptime(entry['start'], '%Y%m%dT%H%M%SZ').replace(tzinfo=timezone.utc)
         # Handle open intervals
         if 'end' in entry:
-            end_dt = datetime.strptime(entry['end'], '%Y%m%dT%H%M%SZ')
+            end_dt = datetime.strptime(entry['end'], '%Y%m%dT%H%M%SZ').replace(tzinfo=timezone.utc)
         else:
-            end_dt = datetime.now(timezone.utc).replace(tzinfo=None)
+            end_dt = datetime.now(timezone.utc)
             
         duration = (end_dt - start_dt).total_seconds() / 3600.0
         entry_tags = entry.get('tags', [])
@@ -153,15 +153,14 @@ def main():
     
     entries, excluded_summary = parse_time_entries(json_data, ignored_tags)
     
-    # Group by local date
+    # Group by local date dynamically handling DST
     daily_totals = defaultdict(float)
-    local_offset = datetime.now().astimezone().utcoffset()
 
     # Consistent local today
     today = datetime.now().date()
 
     for entry in entries:
-        local_date = (entry['start'] + local_offset).date()
+        local_date = entry['start'].astimezone().date()
         daily_totals[local_date] += entry['duration']
     
     if not daily_totals:
