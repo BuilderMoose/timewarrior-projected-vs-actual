@@ -1,9 +1,13 @@
 # Timewarrior Projected vs Actual Script Change Log
 
-## [1.2] - pending
+## [1.2] - 2026-11-05
 
-### Change
-*   **Script Rename:** Renamed the script from analysis.py to projected.py to naming consistency.
+### Changed
+*   **Script Rename:** Renamed the script from analysis.py to projected.py for naming consistency.
+
+### Fixed
+*   **Daylight Saving Time Boundary Error:** Replaced static local timezone offset calculations with dynamic UTC-aware conversions (`.astimezone()`). Prevents entries recorded during DST from shifting to incorrect calendar dates when viewed in standard time.
+*   **Last Month Calculation:** Fixed an issue where data from the previous month was calculated incorrectly.
 
 
 ## [1.1] - 2026-04-08 
