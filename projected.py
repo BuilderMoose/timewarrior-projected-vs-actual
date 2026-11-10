@@ -205,6 +205,12 @@ def main():
     last_week = None
     
     for date_obj in all_dates:
+        actual = daily_totals.get(date_obj, 0.0)
+        proj = get_projected_hours(date_obj, exclusions, holidays, hours_per_day)
+
+        if hide_weekends and date_obj.strftime('%A').lower() in ['saturday', 'sunday'] and actual == 0:
+            continue
+
         curr_week = date_obj.isocalendar()[1]
         
         if last_week is not None and curr_week != last_week:
@@ -214,11 +220,6 @@ def main():
             week_actual, week_proj = 0.0, 0.0
         
         last_week = curr_week
-        actual = daily_totals.get(date_obj, 0.0)
-        proj = get_projected_hours(date_obj, exclusions, holidays, hours_per_day)
-
-        if hide_weekends and date_obj.strftime('%A').lower() in ['saturday', 'sunday'] and actual == 0:
-            continue
 
         accum_actual += actual
         accum_proj += proj

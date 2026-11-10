@@ -1,5 +1,10 @@
 # Timewarrior Projected vs Actual Script Change Log
 
+## [1.2.1] - 2026-11-10
+
+### Fixed
+*   **Month-Start Weekend Boundary:** Fixed an issue where months starting on a weekend (such as Sunday) produced an empty week summary header at the top of the report when `projected.show_weekends = no`.
+
 ## [1.2] - 2026-11-05
 
 ### Changed
@@ -7,6 +12,10 @@
 
 ### Fixed
 *   **Daylight Saving Time Boundary Error:** Replaced static local timezone offset calculations with dynamic UTC-aware conversions (`.astimezone()`). Prevents entries recorded during DST from shifting to incorrect calendar dates when viewed in standard time.
+
+## [1.1.1] - 2026-04-14
+
+### Fixed
 *   **Last Month Calculation:** Fixed an issue where data from the previous month was calculated incorrectly.
 
 
